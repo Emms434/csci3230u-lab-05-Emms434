@@ -42,6 +42,23 @@ const paletteEl = document.getElementById('palette')
  */
 function renderBoard() {
   // TODO
+  boardEl.innerHTML = ''
+  for (let r = 0; r < 9; r++) {
+    const tr = document.createElement('tr')
+    for (let c = 0; c < 9; c++) {
+      const td = document.createElement('td')
+      const value = getCell(board, r, c)
+      td.id = `cell-${r}-${c}`
+      td.textContent = value === EMPTY ? '' : value
+      if (getCell(SAMPLE_BOARD, r, c) === EMPTY && value !== EMPTY) {
+        td.classList.add('user-input')
+      }
+      td.addEventListener('click', () => placeAt(r, c))
+      tr.appendChild(td)
+    }
+    boardEl.appendChild(tr)
+  }
+  highlightConflicts()
 }
 
 /**
@@ -51,6 +68,12 @@ function renderBoard() {
  */
 function highlightConflicts() {
   // TODO
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const td = document.getElementById(`cell-${r}-${c}`)
+      td.classList.toggle('error', findConflicts(board, r, c).length > 0)
+    }
+  }
 }
 
 /**
@@ -63,6 +86,22 @@ function highlightConflicts() {
  */
 function renderPalette() {
   // TODO
+  paletteEl.innerHTML = ''
+  const tr = document.createElement('tr')
+  for (let d = 1; d <= 9; d++) {
+    const td = document.createElement('td')
+    td.textContent = d
+    td.addEventListener('click', () => selectDigit(d))
+    tr.appendChild(td)
+  }
+  const undoTd = document.createElement('td')
+  const img = document.createElement('img')
+  img.src = '/images/undo.png'
+  img.alt = 'Undo'
+  undoTd.appendChild(img)
+  undoTd.addEventListener('click', undo)
+  tr.appendChild(undoTd)
+  paletteEl.appendChild(tr)
 }
 
 // ---- interaction ----------------------------------------------------
@@ -73,6 +112,9 @@ function renderPalette() {
  */
 function selectDigit(digit) {
   // TODO
+  activeDigit = digit
+  const cells = paletteEl.querySelectorAll('td')
+  cells.forEach((td, i) => td.classList.toggle('active', i + 1 === digit))
 }
 
 /**
@@ -85,14 +127,23 @@ function selectDigit(digit) {
  */
 function placeAt(row, col) {
   // TODO
+  if (activeDigit === null) return
+  if (getCell(SAMPLE_BOARD, row, col) !== EMPTY) return
+  history.push(board)
+  board = setCell(board, row, col, activeDigit)
+  renderBoard()
+  if (isComplete(board)) celebrate()
 }
 
 /** Step back one move. TODO: if history isn't empty, pop into `board`, re-render. */
 function undo() {
   // TODO
+  if (history.length > 0) {
+    board = history.pop()
+    renderBoard()
+  }
 }
 
-// ---- finishing (done for you) ---------------------------------------
 
 function celebrate() {
   recordScore()
@@ -107,6 +158,6 @@ function recordScore() {
   localStorage.setItem('sudoku-scores', JSON.stringify(scores))
 }
 
-// ---- start ----------------------------------------------------------
+// To start
 renderPalette()
 renderBoard()
